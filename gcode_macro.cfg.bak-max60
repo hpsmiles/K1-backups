@@ -765,7 +765,7 @@ gcode:
 description: Preheat chamber before printing (traps heat, heats bed, circulates with aux part fan fan2, waits for target)
 gcode:
     {% set target = params.TEMP|default(45)|int %}
-    {% set max_minutes = params.MAX_MINUTES|default(60)|int %}
+    {% set max_minutes = params.MAX_MINUTES|default(20)|int %}
     {% set bed_target = params.BED_TEMP|default(100)|int %}
     {action_respond_info("CHAMBER_PREHEAT: starting (target " ~ target ~ "C, max " ~ max_minutes ~ " min)")}
     # 1. Turn off chamber fan to trap heat (fan1 == chamber_fan pin PC0)
