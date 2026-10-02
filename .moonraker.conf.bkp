@@ -79,3 +79,19 @@ channel = beta
 repo = fluidd-core/fluidd
 path = /usr/data/fluidd
 
+[update_manager octoapp]
+type = git_repo
+channel = beta
+primary_branch = release
+path = /usr/data/octoapp
+origin = https://github.com/crysxd/OctoApp-Plugin.git
+env = /usr/data/octoapp-env/bin/python
+requirements = requirements.txt
+install_script = install.sh
+managed_services = 
+	octoapp
+
+[announcements]
+subscriptions = 
+	octoapp.
+
