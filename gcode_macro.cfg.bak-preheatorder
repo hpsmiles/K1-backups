@@ -426,10 +426,6 @@ gcode:
     PRINT_PREPARE_CLEAR
   {% endif %}
 
-  {% if params.FILAMENT|default('')|upper == 'ASA' %}
-    CHAMBER_PREHEAT TEMP=45 BED_TEMP={bed_temp} MAX_MINUTES=60
-  {% endif %}
-
   {action_respond_info("Priming the nozzle with a purge line...")}
   {% if printer['output_pin ADAPTIVE_PURGE_LINE'].value == 1 %}
     _SMART_PARK
