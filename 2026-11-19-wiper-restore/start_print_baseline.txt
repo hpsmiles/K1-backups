@@ -1,0 +1,68 @@
+[gcode_macro START_PRINT]
+variable_prepare: 0
+gcode:
+  WAIT_TEMP_END
+  CLEAR_PAUSE
+  {% set g28_extruder_temp = printer.custom_macro.g28_ext_temp %}
+  {% set bed_temp = printer.custom_macro.default_bed_temp %}
+  {% set extruder_temp = printer.custom_macro.default_extruder_temp %}
+  {% set chamber_temp = params.CHAMBER_TEMP|default(40)|int %}
+  {% set skip_chamber = params.SKIP_CHAMBER|default(0)|int %}
+
+  {% if 'BED_TEMP' in params|upper and (params.BED_TEMP|float) %}
+    {% set bed_temp = params.BED_TEMP %}
+  {% endif %}
+
+  {% if 'EXTRUDER_TEMP' in params|upper and (params.EXTRUDER_TEMP|float) %}
+    {% set extruder_temp = params.EXTRUDER_TEMP %}
+  {% endif %}
+
+  RESPOND TYPE=command MSG="== Print startup =="
+  {% set heating_msg = "Heating the hotend to " ~ extruder_temp ~ "C and the bed to " ~ bed_temp ~ "C..." %}
+  RESPOND TYPE=command MSG="{heating_msg}"
+
+  {% if printer['gcode_macro START_PRINT'].prepare|int == 0 %}
+    RESPOND TYPE=command MSG="Homing the print head (finding its starting position)..."
+    PRINT_PREPARE_CLEAR
+    CX_ROUGH_G28 EXTRUDER_TEMP={extruder_temp} BED_TEMP={bed_temp}
+    RESPOND TYPE=command MSG="Cleaning the nozzle tip..."
+    CX_NOZZLE_CLEAR
+    RESPOND TYPE=command MSG="Running a precise position calibration..."
+    ACCURATE_G28
+    RESPOND TYPE=command MSG="Measuring the build plate (bed leveling / mesh calibration)..."
+    {% if printer['output_pin ADAPTIVE_BED_MESH'].value == 1 %}
+      RESPOND TYPE=command MSG="Starting Adaptive Bed Mesh..."
+      BED_MESH_CLEAR
+      BED_MESH_CALIBRATE
+      BED_MESH_PROFILE SAVE=adaptive
+      BED_MESH_PROFILE LOAD=adaptive
+    {% elif printer['output_pin FULL_BED_MESH'].value == 1 %}
+      CX_PRINT_LEVELING_CALIBRATION
+      BED_MESH_PROFILE LOAD=default
+    {% else %}
+      {% if not printer['bed_mesh'].profile_name %}
+        CX_PRINT_LEVELING_CALIBRATION
+      {% endif %}
+    {% endif %}
+  {% else %}
+    PRINT_PREPARE_CLEAR
+  {% endif %}
+
+  {% if params.FILAMENT|default('')|upper == 'ASA' and skip_chamber == 0 %}
+    CHAMBER_PREHEAT TEMP={chamber_temp} BED_TEMP={bed_temp} MAX_MINUTES=60
+  {% endif %}
+
+  RESPOND TYPE=command MSG="Priming the nozzle with a purge line..."
+  {% if printer['output_pin ADAPTIVE_PURGE_LINE'].value == 1 %}
+    _SMART_PARK
+    M109 S{extruder_temp}
+    M190 S{bed_temp}
+    RESPOND TYPE=command MSG="Starting Adaptive Purge Line..."
+    _LINE_PURGE
+  {% else %}
+    CX_PRINT_DRAW_ONE_LINE
+  {% endif %}
+  RESPOND TYPE=command MSG="== Start-up complete - your print is starting =="
+
+
+[gcode_macro PRINT_PREPARED]

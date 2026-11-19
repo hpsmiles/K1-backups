@@ -1,0 +1,20 @@
+gcode_macro.cfg:description: Set Chamber temperature with slicers
+gcode_macro.cfg:    {% if printer["temperature_fan chamber_fan"].speed > 0.0 %}
+gcode_macro.cfg:      SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=chamber_fan TARGET={params.S|default(35)}
+gcode_macro.cfg:      SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=chamber_fan TARGET=35
+gcode_macro.cfg:  {% set chamber_temp = params.CHAMBER_TEMP|default(40)|int %}
+gcode_macro.cfg:  {% set skip_chamber = params.SKIP_CHAMBER|default(0)|int %}
+gcode_macro.cfg:  {% if params.FILAMENT|default('')|upper == 'ASA' and skip_chamber == 0 %}
+gcode_macro.cfg:    CHAMBER_PREHEAT TEMP={chamber_temp} BED_TEMP={bed_temp} MAX_MINUTES=60
+gcode_macro.cfg:[gcode_macro CHAMBER_PREHEAT]
+gcode_macro.cfg:description: Preheat chamber before printing (traps heat, heats bed, circulates with aux part fan fan2, waits for target)
+gcode_macro.cfg:    {% set start_msg = "CHAMBER_PREHEAT: starting (target " ~ target ~ "C, max " ~ max_minutes ~ " min)" %}
+gcode_macro.cfg:    # 1. Turn off chamber fan to trap heat (fan1 == chamber_fan pin PC0)
+gcode_macro.cfg:    SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=chamber_fan TARGET=0
+gcode_macro.cfg:    # 2. Heat the bed to warm the chamber air
+gcode_macro.cfg:    # 4. Block until chamber temp actually reaches target (real wait)
+gcode_macro.cfg:    TEMPERATURE_WAIT SENSOR="temperature_sensor chamber_temp" MINIMUM={target}
+gcode_macro.cfg:    {% set reached_msg = "CHAMBER_PREHEAT: reached " ~ target ~ "C" %}
+printer.cfg:[temperature_sensor chamber_temp]
+printer.cfg:[temperature_fan chamber_fan]
+printer_params.cfg:variable_chamber_temp: 60
